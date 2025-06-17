@@ -11,7 +11,7 @@ def main():
     id_test = modul.id_test()
 
     # report name
-    report_filename = "Test Knowledge Base 100"
+    report_filename = "kb_asuransi_10"
 
     # Logging
     modul.setup_logging(report_filename, id_test)
