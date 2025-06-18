@@ -1,0 +1,36 @@
+import OpenAI from 'openai';
+
+// Inisialisasi OpenAI client
+// API Key akan dibaca secara otomatis dari environment variable OPENAI_API_KEY
+const openai = new OpenAI();
+
+export async function getLlmScore(question: string, actualAnswer: string, expectedAnswer: string): Promise<string | null> {
+  const prompt = `
+    Anda adalah seorang quality assurance yang mengevaluasi jawaban dari sebuah chatbot.
+    Pertanyaan: "${question}"
+    Jawaban yang Diharapkan: "${expectedAnswer}"
+    Jawaban yang Diberikan oleh Chatbot: "${actualAnswer}"
+
+    Bandingkan "Jawaban yang Diberikan" dengan "Jawaban yang Diharapkan". Berikan skor relevansi dari 1 hingga 5, di mana 5 sangat relevan dan 1 tidak relevan sama sekali. Jelaskan alasan Anda secara singkat.
+    
+    Format output Anda harus dalam bentuk JSON seperti ini: {"score": <skor>, "reason": "<alasan>"}.
+    Hanya berikan JSON, tanpa teks tambahan.
+  `;
+
+  try {
+    console.log('Menghubungi LLM untuk evaluasi...');
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo", // Atau model lain yang Anda gunakan
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0,
+    });
+    
+    const result = response.choices[0]?.message?.content;
+    console.log('Respon LLM diterima:', result);
+    return result;
+
+  } catch (error) {
+    console.error('Error saat menghubungi OpenAI API:', error);
+    return null;
+  }
+}

@@ -1,91 +1,39 @@
-name: Python Selenium CI
+name: Playwright Tests
 
 on:
   push:
-    branches:
-      - main # Ganti dengan nama branch yang sesuai
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  test:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        python-version: [3.8]
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: npm install
 
-      - name: Install Dependencies Selenium, Webdriver, Jinja Reporter etc..
-        run: |
-          python -m pip install --upgrade pip
-          pip install selenium
-          pip install art
-          pip install colorama
-          pip install selenium webdriver_manager
-          pip install jinja2
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
 
-      # - uses: actions/checkout@v3
-      #   with:
-      #     fetch-depth: 0
-      # - name: SonarQubeScan
-      #   uses: SonarSource/sonarqube-scan-action@v4
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    - name: Run Playwright tests
+      run: npx playwright test
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }} # Pastikan Anda sudah set secret ini di GitHub
 
-      # - name: Install SonarQube Scanner
-      #   run: |
-      #     curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-      #     unzip sonar-scanner.zip
-      #     sudo mv sonar-scanner-5.0.1.3006-linux /opt/sonar-scanner
-      #     echo "/opt/sonar-scanner/bin" >> $GITHUB_PATH
-
-      # - name: Run SonarQube Scanner
-      #   run: |
-      #     sonar-scanner \
-      #       -Dsonar.projectKey=okinrtestcase_Intent \
-      #       -Dsonar.organization=okinrtestcase \
-      #       -Dsonar.host.url=https://sonarcloud.io \
-      #       -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
-      - name: Run Tests
-        run: |
-          python main.py
-
-      - name: Calculate Today
-        id: calculate_vars
-        run: |
-          today=$(date +"%Y-%m-%d")
-          echo "::set-output name=today::$today"
-
-      # - name: Upload HTML Report
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: html-report
-      #     path: report/html/${{ steps.calculate_vars.outputs.today }}/
-
-      # - name: Upload JSON Report
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: json-report
-      #     path: report/json/${{ steps.calculate_vars.outputs.today }}
-
-      - name: Remove Folder Template
-        run: rm -rf report/template
-
-      - name: Upload All Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: report
-          path: report/
-
-      - name: Debugging Information
-        run: |
-          echo "Python version: $(python --version)"
-          echo "Installed packages: $(pip freeze)"
+    - name: Upload report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
